@@ -152,17 +152,19 @@ const TeamPage = () => {
       alert("❌ Failed to resend invite");
     }
   };
+const handleCancelInvite = async (inviteId) => {
+  if (!window.confirm("Cancel this invite?")) return;
 
-  const handleCancelInvite = async (id) => {
-    try {
-      await api.delete(`/team/member/${id}`);
-      setPendingInvitations(prev => prev.filter(invite => invite._id !== id));
-      alert("❌ Invitation cancelled!");
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to cancel invite");
-    }
-  };
+  try {
+    await api.delete(`/team/invite/${inviteId}`);
+    alert("Invite cancelled");
+    fetchInvites(); // refresh list
+  } catch (err) {
+    console.error(err);
+    alert("Failed to cancel invite");
+  }
+};
+
 
   // 🔹 Fetch members & invites from backend
   useEffect(() => {
@@ -382,7 +384,7 @@ const TeamPage = () => {
                     </button>
                     <button 
                       className="cancel-btn"
-                      onClick={() => handleCancelInvite(invite.id)}
+                      onClick={() => handleCancelInvite(invite._id)}
                     >
                       Cancel
                     </button>
