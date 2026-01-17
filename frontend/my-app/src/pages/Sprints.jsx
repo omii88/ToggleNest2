@@ -5,6 +5,8 @@ import {
   FiCalendar, FiPlus, FiFilter, FiRefreshCcw, FiX, FiChevronLeft,
   FiGrid, FiSun, FiList, FiTrash2, FiAlertTriangle,
 } from "react-icons/fi";
+import api from "../api/axios";
+import Swal from "sweetalert2";
 
 
 const SprintPage = () => {
@@ -12,6 +14,12 @@ const SprintPage = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarView, setCalendarView] = useState('month');
   const [sprints, setSprints] = useState([]);
+  const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [goal, setGoal] = useState("");
+  const [loading, setLoading] = useState(false);
+
   
   const [contextMenu, setContextMenu] = useState({ 
     show: false, x: 0, y: 0, id: null, type: null 
@@ -41,23 +49,80 @@ useEffect(() => {
 
 
 
-  const createSprint = () => {
-    const name = document.getElementById('sprintName').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const goal = document.getElementById('sprintGoal').value;
+  async function fetchSprints() {
+    try {
+      const res = await api.get("/sprints");
+      setSprints(res.data);
+      console.log(res.data)
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch sprints");
+    } 
+  }
+  useEffect(() => {
+    fetchSprints();
+  }, []);
+
+  const createSprint = async () => {
+    // const name = document.getElementById('sprintName').value;
+    // const startDate = document.getElementById('startDate').value;
+    // const endDate = document.getElementById('endDate').value;
+    // const goal = document.getElementById('sprintGoal').value;
     
-    if (name && startDate && endDate) {
-      setSprints([...sprints, {
-        id: Date.now(),
-        name, startDate, endDate, goal,
-        active: sprints.length === 0
-      }]);
+    // if (name && startDate && endDate) {
+    //   setSprints([...sprints, {
+    //     id: Date.now(),
+    //     name, startDate, endDate, goal,
+    //     active: sprints.length === 0
+    //   }]);
+    //   setShowCreateSprint(false);
+    //   document.getElementById('sprintName').value = '';
+    //   document.getElementById('startDate').value = '';
+    //   document.getElementById('endDate').value = '';
+    //   document.getElementById('sprintGoal').value = '';
+    // }
+     if (!name || !startDate || !endDate) {
+      alert("All fields are required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 🔥 BACKEND CALL
+      const res = await api.post("/sprints", {
+        name,
+        startDate,
+        endDate,
+        goal,
+      });
+      console.log(res.data)
+
+      // Notify dashboard
+     // onSprintCreated?.(res.data);
+
+      // reset & close
+      // setName("");
+      // setStartDate("");
+      // setEndDate("");
+      // setGoal("");
+
+      // onClose();
+      await fetchSprints(); 
       setShowCreateSprint(false);
-      document.getElementById('sprintName').value = '';
-      document.getElementById('startDate').value = '';
-      document.getElementById('endDate').value = '';
-      document.getElementById('sprintGoal').value = '';
+      Swal.fire({
+        icon: 'success',
+        title: 'Sprint Created',  
+        text: `Sprint "${res.data.name}" has been created successfully!`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.msg || "Failed to create sprint");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,7 +165,7 @@ useEffect(() => {
   // ✅ FIXED: Unified delete confirmation handler
   const confirmDelete = () => {
     if (deleteConfirm.type === 'sprint') {
-      setSprints(sprints.filter(s => s.id !== deleteConfirm.id));
+      
     } else if (deleteConfirm.type === 'backlog') {
       const updatedOriginal = originalBacklogItems.filter(item => item.id !== deleteConfirm.id);
       setOriginalBacklogItems(updatedOriginal);
@@ -151,6 +216,9 @@ useEffect(() => {
     setBacklogItems(filtered);
   };
 
+  const activeSprint = sprints.find(
+    s => s.status === "active" || s.status === "upcoming"
+  );
 
   return (
     <div className="sprint-wrapper" onClick={handleCloseContextMenu}>
@@ -445,21 +513,26 @@ useEffect(() => {
             <div className="sprint-modal-body">
               <div className="sprint-form-group">
                 <label>Sprint Name</label>
-                <input id="sprintName" type="text" placeholder="Enter sprint name" />
+                <input id="sprintName" type="text" placeholder="Enter sprint name" onBlur={(e) => setName(e.target.value)}/>
               </div>
               <div className="sprint-form-row">
                 <div className="sprint-form-group">
                   <label>Start Date</label>
-                  <input id="startDate" type="date" />
+                  <input id="startDate" type="date" onChange={(e) => setStartDate(e.target.value)} />
                 </div>
                 <div className="sprint-form-group">
                   <label>End Date</label>
-                  <input id="endDate" type="date" />
+                  <input id="endDate" type="date" onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </div>
               <div className="sprint-form-group">
                 <label>Sprint Goal</label>
-                <textarea id="sprintGoal" placeholder="What is the goal of this sprint?" />
+                <textarea
+  id="sprintGoal"
+  placeholder="What is the goal of this sprint?"
+  onChange={(e) => setGoal(e.target.value)}
+/>
+
               </div>
             </div>
             <div className="sprint-modal-footer">
@@ -510,7 +583,7 @@ useEffect(() => {
                 <div className="calendar-grid">
                   {sprints.map((sprint) => (
                     <div 
-                      key={sprint.id} 
+                      key={sprint._id} 
                       className={`calendar-day ${sprint.active ? 'active' : ''}`}
                       onContextMenu={(e) => handleContextMenu(e, sprint.id, 'sprint')}
                     >

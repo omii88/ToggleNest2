@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
+import Swal from "sweetalert2";
 
 const CreateProjectPopup = ({ show, onClose, onProjectCreated }) => {
   const [nameValue, setNameValue] = useState("");
@@ -21,8 +22,19 @@ const CreateProjectPopup = ({ show, onClose, onProjectCreated }) => {
         description: descriptionValue.trim(),
       });
 
-      // Notify parent (Dashboard)
-      onProjectCreated?.(res.data);
+      // // Notify parent (Dashboard)
+      // onProjectCreated?.(res.data);
+      // }
+            if (res.data) {
+              Swal.fire("Project Created!", "Your project is now active.", "success");
+              // console.log("Created Project:", res.data);
+              setNameValue(res.data.name);
+              setDescriptionValue(res.data.description || "");
+              onClose();
+            }
+            // ✅ Reset & close popup
+            
+      
 
       // Reset + Close popup
       setNameValue("");

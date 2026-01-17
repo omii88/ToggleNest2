@@ -5,7 +5,7 @@ const router = express.Router();
 const { register, login, getMe } = require("../controllers/authController");
 
 // middleware
-const auth = require("../middleware/authMiddleware");
+const auth = require("../middleware/auth.middleware");
 
 // public routes
 router.post("/register", register);

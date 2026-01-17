@@ -91,10 +91,32 @@ const loadTasks = async () => {
     console.error("Error loading tasks:", err);
   }
 };
+const loadProjects = async () => {
+  try {
+    const res = await api.get("/projects");
+    console.log("Loaded Projects:", res.data);
+
+    const formattedProjects = res.data.map((project) => ({
+      _id: project._id,
+      name: project.name,
+      user: "You",
+      action: `Created project: ${project.name}`,
+      time: new Date(project.createdAt).toLocaleString(),
+    }));
+
+    setProjects(formattedProjects);
+  } catch (err) {
+    console.error("Error loading projects:", err);
+  }
+};
 
 useEffect(() => {
-  loadTasks();  // 🔥 Load tasks on page load
+  loadTasks();
+  loadProjects(); // 🔥 ADD THIS
 }, []);
+
+
+// 🔥 Load projects from backend
 
 
   return (

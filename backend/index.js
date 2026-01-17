@@ -30,6 +30,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const workspaceRoutes = require("./routes/workspaceRoutes");
 const userRoutes = require("./routes/userRoutes");
 const teamRoutes = require("./routes/teamRoutes");
+const sprintRoutes = require("./routes/sprintRoutes");
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -38,6 +39,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/sprints",sprintRoutes);
 
 // Test route
 app.get("/api/test", (req, res) => {
