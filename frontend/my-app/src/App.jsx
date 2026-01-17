@@ -1,4 +1,5 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -12,10 +13,12 @@ import Boards from "./pages/Boards";
 import Analytics from "./pages/Analytics";
 import TeamPage from "./pages/TeamPage";
 
+import ProtectedRoute from "./routes/ProtectedRoute";
+
 function App() {
   const location = useLocation();
 
-  // Hide Navbar and Footer on login/signup pages
+  // Hide Navbar & Footer on auth pages
   const hideNavbarFooterRoutes = ["/login", "/signup"];
   const shouldShowNavbarFooter = !hideNavbarFooterRoutes.includes(location.pathname);
 
@@ -25,15 +28,68 @@ function App() {
 
       <main>
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/workspace" element={<WorkSpace />} />
-          <Route path="/sprints" element={<Sprints />} />
-          <Route path="/boards" element={<Boards />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/teampage" element={<TeamPage />} />
+
+          {/* Protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/workspace"
+            element={
+              <ProtectedRoute>
+                <WorkSpace />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/sprints"
+            element={
+              <ProtectedRoute>
+                <Sprints />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/boards"
+            element={
+              <ProtectedRoute>
+                <Boards />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/teampage"
+            element={
+              <ProtectedRoute>
+                <TeamPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
 
