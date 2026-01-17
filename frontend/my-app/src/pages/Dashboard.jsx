@@ -30,14 +30,7 @@ const Dashboard = () => {
   };
 
   // 🔥 Load tasks
-  const loadTasks = async () => {
-    try {
-      const res = await api.get("/tasks/my");
-      setTasks(res.data);
-    } catch (err) {
-      console.error("Task load error:", err);
-    }
-  };
+  // (removed duplicate loadTasks function)
 
   useEffect(() => {
     loadDashboard();
