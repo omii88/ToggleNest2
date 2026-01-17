@@ -65,3 +65,70 @@ exports.getTaskCount = async (req, res) => {
     res.status(500).json({ msg: error.message });
   }
 };
+
+/**
+ * DELETE TASK
+ * DELETE /api/tasks/:id
+ */
+exports.deleteTask = async (req, res) => {
+  try {
+    const task = await Task.findOne({
+      _id: req.params.id,
+      assignedTo: req.user.id
+    });
+
+    if (!task) {
+      return res.status(404).json({ msg: "Task not found" });
+    }
+
+    await task.deleteOne();
+    res.json({ msg: "Task deleted" });
+
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+/**
+ * UPDATE TASK STATUS
+ * PUT /api/tasks/:id/status
+ */
+exports.updateTaskStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const task = await Task.findOneAndUpdate(
+      { _id: req.params.id, assignedTo: req.user.id },
+      { status },
+      { new: true }
+    );
+
+    if (!task) {
+      return res.status(404).json({ msg: "Task not found" });
+    }
+
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};
+
+/**
+ * ARCHIVE DONE TASKS
+ * DELETE /api/tasks/archive/done
+ */
+exports.archiveDoneTasks = async (req, res) => {
+  try {
+    const result = await Task.deleteMany({
+      assignedTo: req.user.id,
+      status: "done"
+    });
+
+    res.json({
+      msg: "Archived done tasks",
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+};

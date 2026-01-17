@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import api from "../api/axios";
+
 import { useState } from "react";
 import "../theme/Boards.css";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +32,10 @@ const BoardColumn = ({
     assignees: "",
     completedBy: "",
   });
+  
+
+ 
+
 
   const handleSubmit = () => {
     if (!form.title.trim()) return;
@@ -53,14 +60,25 @@ const BoardColumn = ({
     setAdding(false);
   };
 
-  const handleArchiveDone = () => {
-    const doneTasks = tasks.filter(task => task.completedBy);
-    if (doneTasks.length > 0) {
-      onArchiveDone(doneTasks);
-    }
-    setShowConfirm(false);
-    setShowMenu(false);
-  };
+  const handleArchiveDone = async () => {
+  try {
+    await api.delete("/tasks/archive/done");
+
+    setColumns(prev => {
+      const updated = {};
+      for (const key in prev) {
+        updated[key] = {
+          ...prev[key],
+          tasks: prev[key].tasks.filter(t => !t.completedBy),
+        };
+      }
+      return updated;
+    });
+  } catch (err) {
+    console.error("Archive failed", err.response?.data || err.message);
+  }
+};
+
 
   return (
     <div className="board-column">
@@ -295,6 +313,8 @@ const BoardColumn = ({
 
 /* ================= BOARDS PAGE ================= */
 const Boards = () => {
+  console.log("TOKEN IN BOARDS:", localStorage.getItem("token"));
+
   const [columns, setColumns] = useState({
     backlog: { 
       tasks: [], 
@@ -317,27 +337,91 @@ const Boards = () => {
       color: "#16a34a" 
     },
   });
+    useEffect(() => {
+  const loadTasks = async () => {
+    try {
+      const res = await api.get("/tasks/my");
+      const tasks = res.data;
+
+      const newColumns = {
+        backlog: { ...columns.backlog, tasks: [] },
+        inProgress: { ...columns.inProgress, tasks: [] },
+        review: { ...columns.review, tasks: [] },
+        done: { ...columns.done, tasks: [] },
+      };
+
+      tasks.forEach((task) => {
+        const formatted = {
+          id: task._id,
+          title: task.title,
+          desc: task.description || "",
+          priority: "low",
+          assignees: [],
+          completedBy: task.status === "done" ? "You" : null,
+          date: new Date(task.createdAt).toLocaleDateString(),
+        };
+
+        if (task.status === "todo") newColumns.backlog.tasks.push(formatted);
+        else if (task.status === "in-progress") newColumns.inProgress.tasks.push(formatted);
+        else if (task.status === "done") newColumns.done.tasks.push(formatted);
+      });
+
+      setColumns(newColumns);
+    } catch (err) {
+      console.error("Failed to load tasks", err);
+    }
+  };
+
+  loadTasks();
+}, []);
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
   const navigate = useNavigate();
 
-  const handleDeleteTask = (columnKey, taskId) => {
-    setColumns(prev => ({
+ const handleDeleteTask = async (columnKey, taskId) => {
+  try {
+    await api.delete(`/tasks/${taskId}`);
+
+    setColumns((prev) => ({
       ...prev,
       [columnKey]: {
         ...prev[columnKey],
-        tasks: prev[columnKey].tasks.filter(task => task.id !== taskId)
-      }
+        tasks: prev[columnKey].tasks.filter((t) => t.id !== taskId),
+      },
     }));
-  };
+  } catch (err) {
+    console.error("Delete failed", err);
+  }
+};
 
-  const handleAddTask = (columnKey) => (task) => {
+ 
+
+  const handleAddTask = (columnKey) => async (task) => {
+  try {
+    const statusMap = {
+      backlog: "todo",
+      inProgress: "in-progress",
+      review: "in-progress",
+      done: "done",
+    };
+
+    const res = await api.post("/tasks", {
+      title: task.title,
+      description: task.desc,
+      status: statusMap[columnKey],
+    });
+
+    const saved = res.data;
+
     const newTask = {
-      id: Date.now().toString(),
-      ...task,
-      tags: [],
-      date: new Date().toLocaleDateString(),
+      id: saved._id,
+      title: saved.title,
+      desc: saved.description || "",
+      priority: "low",
+      assignees: [],
+      completedBy: saved.status === "done" ? "You" : null,
+      date: new Date(saved.createdAt).toLocaleDateString(),
     };
 
     setColumns((prev) => ({
@@ -347,7 +431,11 @@ const Boards = () => {
         tasks: [...prev[columnKey].tasks, newTask],
       },
     }));
-  };
+  } catch (err) {
+    console.error("Add task failed", err);
+  }
+};
+
 
   const handleArchiveDone = (doneTasks) => {
     setColumns(prev => {
@@ -382,44 +470,63 @@ const Boards = () => {
     setEditingColumn(null);
   };
 
-  const onDragEnd = (result) => {
-    const { destination, source, draggableId } = result;
+ const onDragEnd = async (result) => {
+  const { destination, source } = result;
 
-    if (!destination) return;
+  if (!destination) return;
 
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
+  if (
+    destination.droppableId === source.droppableId &&
+    destination.index === source.index
+  ) {
+    return;
+  }
 
-    let taskToMove;
-    let sourceColumn = columns[source.droppableId];
-    let destColumn = columns[destination.droppableId];
+  let sourceColumn = columns[source.droppableId];
+  let destColumn = columns[destination.droppableId];
 
-    taskToMove = sourceColumn.tasks[source.index];
+  const taskToMove = sourceColumn.tasks[source.index];
 
-    const newSourceTasks = Array.from(sourceColumn.tasks);
-    const newDestTasks = Array.from(destColumn.tasks);
+  const newSourceTasks = Array.from(sourceColumn.tasks);
+  const newDestTasks = Array.from(destColumn.tasks);
 
-    newSourceTasks.splice(source.index, 1);
-    newDestTasks.splice(destination.index, 0, taskToMove);
+  newSourceTasks.splice(source.index, 1);
+  newDestTasks.splice(destination.index, 0, taskToMove);
 
-    setColumns({
-      ...columns,
-      [source.droppableId]: {
-        ...sourceColumn,
-        tasks: newSourceTasks
-      },
-      [destination.droppableId]: {
-        ...destColumn,
-        tasks: newDestTasks
-      }
-    });
+  setColumns({
+    ...columns,
+    [source.droppableId]: {
+      ...sourceColumn,
+      tasks: newSourceTasks,
+    },
+    [destination.droppableId]: {
+      ...destColumn,
+      tasks: newDestTasks,
+    },
+  });
 
-    console.log(`✅ Moved task "${taskToMove.title}" from ${source.droppableId} → ${destination.droppableId}`);
+  console.log(
+    `✅ Moved task "${taskToMove.title}" from ${source.droppableId} → ${destination.droppableId}`
+  );
+
+  // 🔥 BACKEND SAVE PART MUST BE INSIDE FUNCTION
+
+  const statusMap = {
+    backlog: "todo",
+    inProgress: "in-progress",
+    review: "in-progress",
+    done: "done",
   };
+
+  try {
+    await api.put(`/tasks/${taskToMove.id}/status`, {
+      status: statusMap[destination.droppableId],
+    });
+  } catch (err) {
+    console.error("Status update failed", err);
+  }
+};
+
 
   const getPeopleSummary = () => {
     const summary = {};
