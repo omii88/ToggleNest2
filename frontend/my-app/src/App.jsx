@@ -19,8 +19,11 @@ function App() {
   const location = useLocation();
 
   // Hide Navbar & Footer on auth pages
-  const hideNavbarFooterRoutes = ["/login", "/signup"];
+  const hideNavbarFooterRoutes = ["/","/login", "/signup"];
   const shouldShowNavbarFooter = !hideNavbarFooterRoutes.includes(location.pathname);
+
+  
+
 
   return (
     <>
