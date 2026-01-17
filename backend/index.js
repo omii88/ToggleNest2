@@ -31,6 +31,7 @@ const workspaceRoutes = require("./routes/workspaceRoutes");
 const userRoutes = require("./routes/userRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes"); // ✅ ADDED
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -39,11 +40,17 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/team", teamRoutes);
-app.use("/api/sprints",sprintRoutes);
+app.use("/api/sprints", sprintRoutes);
+app.use("/api/dashboard", dashboardRoutes); // ✅ ADDED
 
 // Test route
 app.get("/api/test", (req, res) => {
   res.json({ msg: "API working 🚀" });
+});
+
+// test post route
+app.post("/api/test", (req, res) => {
+  res.json({ msg: "Test route working" });
 });
 
 // =========================
