@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import "../theme/Sidebar.css";
-import CreateTaskPopup from "../components/CreateTask";
+import CreateTaskPopup from "./CreateTask";
 import CreateProjectPopup from "../components/CreateProject";
 
 
