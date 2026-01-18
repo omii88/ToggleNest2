@@ -1,4 +1,4 @@
-// ✅ FINAL WorkSpace.jsx - FULLY WORKING BACKEND + MOCK DATA HYBRID
+// ✅ FIXED WorkSpace.jsx - Build Error Resolved (Copy-Paste Ready)
 import React, { useState, useEffect } from "react";
 import "../theme/Workspace.css"; 
 import api from "../api/axios";
@@ -38,6 +38,42 @@ const WorkSpace = () => {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [contextMenu.show]);
+
+  // ✅ FIXED MOCK DATA - memberCount instead of duplicate members
+  const loadMockData = () => {
+    const mockWorkspaces = [
+      {
+        _id: "1",
+        id: "1",
+        name: "Acme Corp HQ",
+        projects: 12,
+        memberCount: 2,  // ✅ FIXED: renamed from members
+        active: true,
+        members: [{ email: "john@acme.com" }, { email: "jane@acme.com" }]
+      },
+      {
+        _id: "2", 
+        id: "2",
+        name: "Personal Projects",
+        projects: 5,
+        memberCount: 1,  // ✅ FIXED: renamed from members
+        active: false,
+        members: [{ email: "you@toggle.com" }]
+      },
+      {
+        _id: "3",
+        id: "3",
+        name: "Marketing Team", 
+        projects: 8,
+        memberCount: 1,  // ✅ FIXED: renamed from members
+        active: false,
+        members: [{ email: "marketing@company.com" }]
+      }
+    ];
+    setWorkspaces(mockWorkspaces);
+    setCurrentWorkspace(mockWorkspaces[0]);
+    localStorage.setItem("currentWorkspace", JSON.stringify(mockWorkspaces[0]));
+  };
 
   // ✅ FETCH WORKSPACES - BACKEND FIRST, FALLBACK TO MOCK
   useEffect(() => {
@@ -79,43 +115,13 @@ const WorkSpace = () => {
       }
     };
 
-    const loadMockData = () => {
-      const mockWorkspaces = [
-        {
-          _id: "1",
-          id: "1",
-          name: "Acme Corp HQ",
-          projects: 12,
-          members: 3,
-          active: true,
-          members: [{ email: "john@acme.com" }, { email: "jane@acme.com" }]
-        },
-        {
-          _id: "2", 
-          id: "2",
-          name: "Personal Projects",
-          projects: 5,
-          members: 1,
-          active: false,
-          members: [{ email: "you@toggle.com" }]
-        },
-        {
-          _id: "3",
-          id: "3",
-          name: "Marketing Team", 
-          projects: 8,
-          members: 4,
-          active: false,
-          members: [{ email: "marketing@company.com" }]
-        }
-      ];
-      setWorkspaces(mockWorkspaces);
-      setCurrentWorkspace(mockWorkspaces[0]);
-      localStorage.setItem("currentWorkspace", JSON.stringify(mockWorkspaces[0]));
-    };
-
     fetchWorkspaces();
   }, []);
+
+  // ✅ Helper function for member count display
+  const getMemberCount = (workspace) => {
+    return workspace?.memberCount ?? (workspace?.members?.length ?? 0);
+  };
 
   // ✅ UNIVERSAL SWITCH (Backend OR Mock)
   const handleSwitch = async (workspace) => {
@@ -163,7 +169,7 @@ const WorkSpace = () => {
 
   // ✅ MANAGE MEMBERS - FIXED
   const handleManageMembers = (workspaceId) => {
-    console.log("Managing members for:", workspaceId); // DEBUG
+    console.log("Managing members for:", workspaceId);
     setSelectedWorkspaceId(workspaceId);
     handleCloseContextMenu();
     setShowMembersModal(true);
@@ -197,7 +203,7 @@ const WorkSpace = () => {
     }
   };
 
-  // ✅ CREATE WORKSPACE (Universal)
+  // ✅ CREATE WORKSPACE (Universal) - FIXED
   const createWorkspace = async () => {
     if (!newWorkspaceName.trim()) return alert("Please enter a workspace name");
     
@@ -209,13 +215,13 @@ const WorkSpace = () => {
         setCurrentWorkspace(newWs);
         localStorage.setItem("currentWorkspace", JSON.stringify(newWs));
       } else {
-        // Mock create
+        // ✅ FIXED Mock create - memberCount instead of duplicate members
         const newWs = {
           _id: Date.now().toString(),
           id: Date.now().toString(),
           name: newWorkspaceName.trim(),
           projects: 0,
-          members: 1,
+          memberCount: 1,
           active: true,
           members: [{ email: "you@toggle.com" }]
         };
@@ -231,7 +237,7 @@ const WorkSpace = () => {
     }
   };
 
-  // ✅ ADD MEMBER (Universal)
+  // ✅ ADD MEMBER (Universal) - FIXED
   const addMember = async () => {
     if (!newMemberEmail.trim()) return;
     
@@ -244,12 +250,12 @@ const WorkSpace = () => {
           setCurrentWorkspace(updatedWs);
         }
       } else {
-        // Mock add
+        // ✅ FIXED Mock add - memberCount instead of duplicate members
         const updatedWorkspaces = workspaces.map(w => 
           (w._id || w.id) === selectedWorkspaceId 
             ? { 
                 ...w, 
-                members: (w.members || []).length + 1,
+                memberCount: (w.members || []).length + 1,
                 members: [...(w.members || []), { email: newMemberEmail.trim() }]
               }
             : w
@@ -266,7 +272,7 @@ const WorkSpace = () => {
     }
   };
 
-  // ✅ REMOVE MEMBER (Universal)
+  // ✅ REMOVE MEMBER (Universal) - FIXED
   const removeMember = async (email) => {
     try {
       if (!useMockData) {
@@ -277,13 +283,17 @@ const WorkSpace = () => {
           setCurrentWorkspace(updatedWs);
         }
       } else {
-        // Mock remove
+        // ✅ FIXED Mock remove - proper memberCount calculation
+        const targetWs = workspaces.find(w => (w._id || w.id) === selectedWorkspaceId);
+        const newMembers = (targetWs?.members || []).filter(m => m.email !== email);
+        const newCount = Math.max(1, newMembers.length);
+        
         const updatedWorkspaces = workspaces.map(w => 
           (w._id || w.id) === selectedWorkspaceId 
             ? {
                 ...w,
-                members: (w.members || []).filter(m => m.email !== email),
-                membersCount: Math.max(1, ((w.members || []).length - 1))
+                members: newMembers,
+                memberCount: newCount
               }
             : w
         );
@@ -365,7 +375,8 @@ const WorkSpace = () => {
               <h2>{currentWorkspace?.name || "No Workspace Selected"}</h2>
               <div className="workspace-stats">
                 <span>{currentWorkspace?.projects || 0} Projects</span>
-                <span>{(currentWorkspace?.members?.length || currentWorkspace?.members || 0)} Members</span>
+                {/* ✅ FIXED: Use getMemberCount helper */}
+                <span>{getMemberCount(currentWorkspace)} Members</span>
               </div>
             </div>
           </div>
@@ -419,7 +430,8 @@ const WorkSpace = () => {
                     <h4>{workspace.name}</h4>
                     <div className="workspace-meta">
                       <span>{workspace.projects || 0} projects</span>
-                      <span>{(workspace.members?.length || workspace.members || 0)} members</span>
+                      {/* ✅ FIXED: Use getMemberCount helper */}
+                      <span>{getMemberCount(workspace)} members</span>
                     </div>
                   </div>
                   {workspace.active && <div className="active-indicator"></div>}
@@ -522,7 +534,8 @@ const WorkSpace = () => {
             </div>
 
             <div className="members-list">
-              <h4>Team Members ({workspaces.find(w => (w._id || w.id) === selectedWorkspaceId)?.members?.length || workspaces.find(w => (w._id || w.id) === selectedWorkspaceId)?.members || 0})</h4>
+              {/* ✅ FIXED: Use getMemberCount helper */}
+              <h4>Team Members ({getMemberCount(workspaces.find(w => (w._id || w.id) === selectedWorkspaceId))})</h4>
               {(() => {
                 const ws = workspaces.find(w => (w._id || w.id) === selectedWorkspaceId);
                 const membersList = ws?.members || [];
