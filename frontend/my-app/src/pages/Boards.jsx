@@ -361,9 +361,14 @@ const Boards = () => {
           date: new Date(task.createdAt).toLocaleDateString(),
         };
 
-        if (task.status === "todo") newColumns.backlog.tasks.push(formatted);
-        else if (task.status === "in-progress") newColumns.inProgress.tasks.push(formatted);
+        // Map tasks to the correct column based on their status
+        if (task.status === "backlog") newColumns.backlog.tasks.push(formatted);
+        else if (task.status === "inProgress") newColumns.inProgress.tasks.push(formatted);
+        else if (task.status === "review") newColumns.review.tasks.push(formatted);
         else if (task.status === "done") newColumns.done.tasks.push(formatted);
+        // Fallback for old status values (for backward compatibility)
+        else if (task.status === "todo") newColumns.backlog.tasks.push(formatted);
+        else if (task.status === "in-progress") newColumns.inProgress.tasks.push(formatted);
       });
 
       setColumns(newColumns);
@@ -399,17 +404,10 @@ const Boards = () => {
 
   const handleAddTask = (columnKey) => async (task) => {
   try {
-    const statusMap = {
-      backlog: "todo",
-      inProgress: "in-progress",
-      review: "in-progress",
-      done: "done",
-    };
-
     const res = await api.post("/tasks", {
       title: task.title,
       description: task.desc,
-      status: statusMap[columnKey],
+      status: columnKey,  // Send the column key as status (backlog, inProgress, review, done)
     });
 
     const saved = res.data;
@@ -511,16 +509,9 @@ const Boards = () => {
 
   // 🔥 BACKEND SAVE PART MUST BE INSIDE FUNCTION
 
-  const statusMap = {
-    backlog: "todo",
-    inProgress: "in-progress",
-    review: "in-progress",
-    done: "done",
-  };
-
   try {
     await api.put(`/tasks/${taskToMove.id}/status`, {
-      status: statusMap[destination.droppableId],
+      status: destination.droppableId,  // Use the destination column key as status
     });
   } catch (err) {
     console.error("Status update failed", err);

@@ -8,7 +8,7 @@ exports.createTask = async (req, res) => {
   try {
     console.log("Request Body:", req.body);
 
-    const { title, description, projectId, dueDate } = req.body;
+    const { title, description, projectId, dueDate, status } = req.body;
 
     // ❗ Assign task to the logged-in user from JWT
     const assignedTo = req.user.id;
@@ -18,6 +18,7 @@ exports.createTask = async (req, res) => {
       description,
       projectId: projectId || null,
       assignedTo,       // <-- FIXED
+      status: status || "backlog",  // Store the column/status
       dueDate
     });
 
