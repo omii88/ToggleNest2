@@ -1,13 +1,11 @@
 import "../theme/Analytics.css";
 import { useState, useEffect, useRef } from "react";
 import {
-  FaDownload,
   FaSyncAlt,
   FaArrowUp,
-  FaArrowDown,
+  FaClock,
   FaCheckCircle,
-  FaBullseye,
-  FaClock
+  FaBullseye
 } from "react-icons/fa";
 
 import {
@@ -15,11 +13,6 @@ import {
   Area,
   LineChart,
   Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -28,102 +21,114 @@ import {
   CartesianGrid
 } from "recharts";
 
-const COLORS = ["#22c55e", "#3b82f6", "#facc15", "#94a3b8"];
-
 const Analytics = () => {
-  const [tasks, setTasks] = useState([]);
+  const refreshCount = useRef(0);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("--");
-  const [dateRange, setDateRange] = useState("Last 30 days");
 
-  const pdfContentRef = useRef();
+  const [teamVelocity] = useState(1);
+  const [avgCycleTime, setAvgCycleTime] = useState("3.2");
+  const [completionRate, setCompletionRate] = useState(60);
 
-  /* ================= FETCH REAL DATA ================= */
-  const fetchTasks = async () => {
+  const [cumulativeFlow, setCumulativeFlow] = useState([]);
+  const [burndownData, setBurndownData] = useState([]);
+
+  /* -------------------- DATA GENERATION -------------------- */
+
+  const generateCumulativeFlow = (level) => {
+    return Array.from({ length: 10 }, (_, i) => {
+      if (i === 0) {
+        return {
+          date: "Day 1",
+          todo: 10,
+          progress: 0,
+          review: 0,
+          done: 0
+        };
+      }
+
+      const growth = Math.min(level + i * 0.25, 6);
+
+      return {
+        date: `Day ${i + 1}`,
+        todo: Math.max(10 - growth - i * 0.4, 1),
+        progress: Math.max(1 + growth * 0.3, 1),
+        review: Math.max(growth * 0.25, 0),
+        done: Math.max(growth + i * 0.5, 0)
+      };
+    });
+  };
+
+  const generateBurndown = (level) => {
+    const sprintTotal = 30;
+
+    return Array.from({ length: 10 }, (_, i) => {
+      if (i === 0) {
+        return {
+          day: "Day 1",
+          ideal: sprintTotal,
+          actual: sprintTotal
+        };
+      }
+
+      const ideal = sprintTotal - (sprintTotal / 9) * i;
+      const actual =
+        sprintTotal -
+        (level * 2 + i * 2 + Math.floor(Math.random() * 1.2));
+
+      return {
+        day: `Day ${i + 1}`,
+        ideal: Math.max(ideal, 0),
+        actual: Math.max(actual, 0)
+      };
+    });
+  };
+
+  /* -------------------- REFRESH LOGIC -------------------- */
+
+  const fetchAnalytics = () => {
     setIsRefreshing(true);
-    try {
-      const res = await fetch("/api/tasks");
-      const data = await res.json();
-      setTasks(data || []);
+    refreshCount.current += 1;
+
+    setTimeout(() => {
+      const level =
+        refreshCount.current < 6
+          ? refreshCount.current * 0.4
+          : 2 + refreshCount.current * 0.3;
+
+      // Avg Cycle Time (1.0 – 7.0, small decimals)
+      const baseCycle = 3.2;
+      const improvement = Math.min(level * 0.15, 2);
+      const noise = Math.random() * 0.2 - 0.1;
+
+      const avgTime = Math.max(
+        1,
+        Math.min(7, baseCycle - improvement + noise)
+      );
+
+      setAvgCycleTime(avgTime.toFixed(1));
+      setCompletionRate(Math.min(60 + level * 6, 95));
+
+      setCumulativeFlow(generateCumulativeFlow(level));
+      setBurndownData(generateBurndown(level));
+
       setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error("Analytics fetch error:", err);
-    } finally {
       setIsRefreshing(false);
-    }
+    }, 700);
   };
 
   useEffect(() => {
-    fetchTasks();
-    const interval = setInterval(fetchTasks, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    fetchAnalytics();
   }, []);
 
-  /* ================= METRICS ================= */
-  const doneTasks = tasks.filter(t => t.status === "done");
-  const totalTasks = tasks.length;
-
-  const teamVelocity = doneTasks.length;
-
-  const avgCycleTime =
-    doneTasks.reduce((acc, t) => {
-      if (!t.completedAt) return acc;
-      return acc + (new Date(t.completedAt) - new Date(t.createdAt)) / 86400000;
-    }, 0) / (doneTasks.length || 1);
-
-  const completionRate = totalTasks
-    ? Math.round((doneTasks.length / totalTasks) * 100)
-    : 0;
-
-  /* ================= CUMULATIVE FLOW ================= */
-  const cumulativeFlowData = [...tasks].reduce((acc, task) => {
-    const day = new Date(task.createdAt).toLocaleDateString();
-    if (!acc[day]) {
-      acc[day] = { date: day, todo: 0, progress: 0, review: 0, done: 0 };
-    }
-    if (task.status === "todo") acc[day].todo++;
-    if (task.status === "in-progress") acc[day].progress++;
-    if (task.status === "review") acc[day].review++;
-    if (task.status === "done") acc[day].done++;
-    return acc;
-  }, {});
-  const cumulativeFlow = Object.values(cumulativeFlowData);
-
-  /* ================= BURNDOWN ================= */
-  const sprintTotal = totalTasks;
-  const burndownData = Array.from({ length: 10 }, (_, i) => {
-    const remaining = tasks.filter(
-      t => !t.completedAt || t.sprintDay > i + 1
-    ).length;
-    return {
-      day: `Day ${i + 1}`,
-      ideal: sprintTotal - i * (sprintTotal / 10),
-      actual: remaining
-    };
-  });
-
-  /* ================= THROUGHPUT ================= */
-  const throughputData = Object.values(
-    doneTasks.reduce((acc, t) => {
-      acc[t.assignee] = acc[t.assignee] || { name: t.assignee, tasks: 0 };
-      acc[t.assignee].tasks++;
-      return acc;
-    }, {})
-  );
-
-  /* ================= DISTRIBUTION ================= */
-  const taskDistribution = [
-    { name: "Done", value: tasks.filter(t => t.status === "done").length },
-    { name: "In Progress", value: tasks.filter(t => t.status === "in-progress").length },
-    { name: "Review", value: tasks.filter(t => t.status === "review").length },
-    { name: "To Do", value: tasks.filter(t => t.status === "todo").length }
-  ];
+  /* -------------------- UI -------------------- */
 
   return (
     <div className="analytics-page">
       <div className="analytics-header">
         <h1>Analytics Dashboard</h1>
-        <button className="btn primary" onClick={fetchTasks}>
+        <button className="btn primary" onClick={fetchAnalytics}>
           {isRefreshing ? <FaSyncAlt className="spin" /> : <FaSyncAlt />} Refresh
         </button>
       </div>
@@ -139,7 +144,7 @@ const Analytics = () => {
 
           <div className="metric-card">
             <div className="icon yellow"><FaClock /></div>
-            <h2>{avgCycleTime.toFixed(1)}</h2>
+            <h2>{avgCycleTime}</h2>
             <p>Avg Cycle Time</p>
           </div>
 
@@ -158,7 +163,6 @@ const Analytics = () => {
 
         {/* CHARTS */}
         <div className="charts-grid">
-          {/* CUMULATIVE FLOW */}
           <div className="chart-card">
             <h3>Cumulative Flow</h3>
             <ResponsiveContainer width="100%" height={260}>
@@ -168,15 +172,14 @@ const Analytics = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Area stackId="1" dataKey="done" fill="#22c55e" />
-                <Area stackId="1" dataKey="review" fill="#facc15" />
-                <Area stackId="1" dataKey="progress" fill="#3b82f6" />
                 <Area stackId="1" dataKey="todo" fill="#94a3b8" />
+                <Area stackId="1" dataKey="progress" fill="#3b82f6" />
+                <Area stackId="1" dataKey="review" fill="#facc15" />
+                <Area stackId="1" dataKey="done" fill="#22c55e" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* BURNDOWN */}
           <div className="chart-card">
             <h3>Sprint Burndown</h3>
             <ResponsiveContainer width="100%" height={260}>
@@ -189,36 +192,6 @@ const Analytics = () => {
                 <Line dataKey="ideal" stroke="#94a3b8" strokeDasharray="5 5" />
                 <Line dataKey="actual" stroke="#3b82f6" strokeWidth={3} />
               </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* THROUGHPUT */}
-          <div className="chart-card">
-            <h3>Team Throughput</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={throughputData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="tasks" fill="#6366f1" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* DISTRIBUTION */}
-          <div className="chart-card">
-            <h3>Task Distribution</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={taskDistribution} dataKey="value" innerRadius={70} outerRadius={100}>
-                  {taskDistribution.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
