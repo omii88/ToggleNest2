@@ -1,5 +1,6 @@
 const Workspace = require("../models/Workspace");
 const Invitation = require("../models/Invitation");
+const Sprint = require("../models/Sprint"); // ✅ Import Sprint model
 
 const getDashboardOverview = async (req, res) => {
   try {
@@ -24,24 +25,31 @@ const getDashboardOverview = async (req, res) => {
 
     const memberSet = new Set();
     acceptedInvites.forEach(invite => {
-      if (invite.acceptedBy) {
-        memberSet.add(invite.acceptedBy.toString());
-      }
+      if (invite.acceptedBy) memberSet.add(invite.acceptedBy.toString());
     });
-
     // include owner
     memberSet.add(userId);
-
     const membersCount = memberSet.size;
 
+    // 4️⃣ Sprint count
+    const sprintCount = await Sprint.countDocuments({ createdBy: userId });
+
+    // 5️⃣ Sprint completed vs remaining
+    const completedSprints = await Sprint.countDocuments({
+      createdBy: userId,
+      status: "completed"
+    });
+    const remainingSprints = sprintCount - completedSprints;
+
+    // 6️⃣ Return the dashboard overview
     res.status(200).json({
       stats: {
         workspaces: workspaceCount,
         teams: teamCount,
         members: membersCount,
-        projects: 0,
-        sprints: 0,
-        boards: 0
+        projects: 0,       // keep as 0 for now
+        sprints: sprintCount,
+        boards: 0          // keep as 0 for now
       },
       recentActivity: [
         {
@@ -51,8 +59,8 @@ const getDashboardOverview = async (req, res) => {
         }
       ],
       sprintChart: {
-        completed: 0,
-        remaining: 1
+        completed: completedSprints,
+        remaining: remainingSprints
       }
     });
 

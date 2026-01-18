@@ -11,74 +11,85 @@ import api from "../api/axios";
 import "../theme/Dashboard.css";
 
 const Dashboard = () => {
+  // 🔹 Dashboard data
   const [stats, setStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [sprintChartData, setSprintChartData] = useState([
+    { name: "Completed", value: 0 },
+    { name: "Remaining", value: 1 },
+  ]);
+
+  // 🔹 Tasks for team performance
   const [tasks, setTasks] = useState([]);
 
+  // 🔹 Projects
+  const [projects, setProjects] = useState([]);
+
+  // 🔹 Popups
   const [showTaskPopup, setShowTaskPopup] = useState(false);
   const [showProjectPopup, setShowProjectPopup] = useState(false);
 
-  // 🔥 Load dashboard stats + activity
+  // 🔹 Load dashboard overview
   const loadDashboard = async () => {
     try {
       const res = await api.get("/dashboard");
+
+      // Stats cards
       setStats(res.data.stats);
-      setRecentActivity(res.data.recentActivity);
+
+      // Recent Activity
+      setRecentActivity(res.data.recentActivity || []);
+
+      // Sprint chart data
+      if (res.data.sprintChart) {
+        setSprintChartData([
+          { name: "Completed", value: res.data.sprintChart.completed },
+          { name: "Remaining", value: res.data.sprintChart.remaining },
+        ]);
+      }
     } catch (err) {
       console.error("Dashboard error:", err);
     }
   };
 
-  // 🔥 Load tasks
-  // (removed duplicate loadTasks function)
+  // 🔹 Load tasks
+  const loadTasks = async () => {
+    try {
+      const res = await api.get("/tasks/my");
+      setTasks(res.data);
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+    }
+  };
 
+  // 🔹 Load projects
+  const loadProjects = async () => {
+    try {
+      const res = await api.get("/projects");
+      const formattedProjects = res.data.map((project) => ({
+        _id: project._id,
+        name: project.name,
+        user: "You",
+        action: `Created project: ${project.name}`,
+        time: new Date(project.createdAt).toLocaleString(),
+      }));
+      setProjects(formattedProjects);
+    } catch (err) {
+      console.error("Error loading projects:", err);
+    }
+  };
+
+  // 🔹 Initial load
   useEffect(() => {
     loadDashboard();
     loadTasks();
+    loadProjects();
   }, []);
 
-  // 🔢 Task stats
-  const completedTasks = tasks.filter(t => t.completed).length;
+  // 🔹 Team performance stats
+  const completedTasks = tasks.filter((t) => t.completed).length;
   const totalTasks = tasks.length || 1;
 
-  const sprintChartData = [
-    { name: "Completed", value: completedTasks },
-    { name: "Remaining", value: totalTasks - completedTasks },
-  ];
-
-// 🔥 Load tasks from backend
-const loadTasks = async () => {
-  try {
-    const res = await api.get("/tasks/my");
-    console.log("Loaded Tasks:", res.data);
-    setTasks(res.data);
-  } catch (err) {
-    console.error("Error loading tasks:", err);
-  }
-};
-const loadProjects = async () => {
-  try {
-    const res = await api.get("/projects");
-    console.log("Loaded Projects:", res.data);
-
-    const formattedProjects = res.data.map((project) => ({
-      _id: project._id,
-      name: project.name,
-      user: "You",
-      action: `Created project: ${project.name}`,
-      time: new Date(project.createdAt).toLocaleString(),
-    }));
-
-    setProjects(formattedProjects);
-  } catch (err) {
-    console.error("Error loading projects:", err);
-  }
-};
-
-useEffect(() => {
-  loadTasks();
-  loadProjects(); // 🔥 ADD THIS
-}, []);
   return (
     <div className="dashboard-layout">
       <Sidebar
@@ -92,7 +103,7 @@ useEffect(() => {
         <h2>Dashboard Overview</h2>
         <p className="muted-text">Welcome back! Here's what's happening.</p>
 
-        {/* 🔹 TOP STAT CARDS */}
+        {/* 🔹 Stats Cards */}
         {stats && (
           <div className="stats-grid">
             <StatCard title="Workspaces" value={stats.workspaces} />
@@ -103,28 +114,30 @@ useEffect(() => {
           </div>
         )}
 
-        {/* 🔹 ACTIVITY + CHART */}
+        {/* 🔹 Activity + Sprint Chart */}
         <div className="bottom-grid">
+          {/* Recent Activity */}
           <div className="activity card card--glow">
             <h3>Recent Activity</h3>
-
             {recentActivity.length === 0 ? (
               <p className="empty-text">No recent activity</p>
             ) : (
-              recentActivity.map((item, i) => (
-                <ActivityItem
-                  key={i}
-                  user="System"
-                  action={`${item.type}: ${item.action}`}
-                  time={new Date(item.time).toLocaleString()}
-                />
-              ))
+              recentActivity
+                .slice(0, 5) // show latest 5
+                .map((item, i) => (
+                  <ActivityItem
+                    key={i}
+                    user={item.user || "System"}
+                    action={`${item.type}: ${item.action}`}
+                    time={new Date(item.time).toLocaleString()}
+                  />
+                ))
             )}
           </div>
 
+          {/* Sprint Progress */}
           <div className="progress card card--glow">
             <h3>Sprint Progress</h3>
-
             <div className="sprint-chart-wrapper">
               <ResponsiveContainer width="100%" height={170}>
                 <PieChart>
@@ -142,15 +155,19 @@ useEffect(() => {
               </ResponsiveContainer>
 
               <div className="sprint-chart-center">
-                <h4>{completedTasks}/{tasks.length}</h4>
+                <h4>
+                  {sprintChartData[0].value}/
+                  {sprintChartData[0].value + sprintChartData[1].value}
+                </h4>
                 <span>Completed</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 🔹 BOTTOM TWO CARDS */}
+        {/* 🔹 Bottom Cards */}
         <div className="overview-grid">
+          {/* Team Performance */}
           <div className="big-card card card--glow">
             <h3>Team Performance</h3>
             <div className="performance-stats">
@@ -165,6 +182,7 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Workspace Overview */}
           <div className="big-card card card--glow">
             <h3>Workspace Overview</h3>
             <div className="workspace-item">
@@ -187,13 +205,12 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* 🔹 POPUPS */}
+      {/* 🔹 Popups */}
       <CreateTaskPopup
         showTaskPopup={showTaskPopup}
         setShowTaskPopup={setShowTaskPopup}
         onTaskCreated={loadTasks}
       />
-
       <CreateProjectPopup
         show={showProjectPopup}
         onClose={() => setShowProjectPopup(false)}
