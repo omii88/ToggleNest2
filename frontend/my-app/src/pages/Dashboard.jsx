@@ -2,8 +2,6 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import StatCard from "../components/StatCard";
 import ActivityItem from "../components/ActivityItem";
-
-// ✅ Use exact filenames and include extensions if needed
 import CreateTaskPopup from "../components/CreateTask.jsx";
 import CreateProjectPopup from "../components/CreateProject.jsx";
 
