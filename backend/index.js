@@ -12,12 +12,25 @@ const app = express();
 // Parse JSON requests
 app.use(express.json());
 
-// CORS configuration
+// CORS configuration for local dev + Vercel
+const allowedOrigins = [
+  "http://localhost:5173", // Vite local
+  process.env.FRONTEND_URL, // Vercel frontend
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*", // optional, allows any frontend
+    origin: function (origin, callback) {
+      // Allow requests with no origin (Postman, mobile apps)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `CORS policy does not allow access from ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
+    credentials: true, // allow cookies if needed
   })
 );
 
@@ -43,18 +56,19 @@ app.use("/api/team", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
 app.use("/api/dashboard", dashboardRoutes); // ✅ ADDED
 
-// Test route
+// =========================
+// TEST ROUTES
+// =========================
 app.get("/api/test", (req, res) => {
   res.json({ msg: "API working 🚀" });
 });
 
-// test post route
 app.post("/api/test", (req, res) => {
-  res.json({ msg: "Test route working" });
+  res.json({ msg: "Test POST route working" });
 });
 
 // =========================
-// CONNECT TO MONGODB
+// CONNECT TO MONGODB & START SERVER
 // =========================
 const PORT = process.env.PORT || 5000;
 
