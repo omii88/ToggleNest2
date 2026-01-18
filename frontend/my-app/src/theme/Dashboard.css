@@ -617,3 +617,39 @@
   background-color: #e2e8f0; /* light gray circle behind emoji */
   margin-right: 8px;
 }
+/* ===========================
+   Recent Activity Scrollbar
+   =========================== */
+.activity-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling */
+.activity-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.activity-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin: 5px 0;
+}
+
+.activity-scroll::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.6);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.activity-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.9);
+}
+
+/* Firefox scrollbar */
+.activity-scroll {
+  scrollbar-color: rgba(124, 58, 237, 0.6) rgba(255, 255, 255, 0.05);
+  scrollbar-width: thin;
+}

@@ -5,6 +5,7 @@ import StatCard from "../components/StatCard";
 import ActivityItem from "../components/ActivityItem";
 import CreateTaskPopup from "../components/CreateTask";
 import CreateProjectPopup from "../components/CreateProject";
+import Swal from "sweetalert2";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import api from "../api/axios";
@@ -79,7 +80,41 @@ const Dashboard = () => {
     }
   };
 
-  // 🔹 Initial load
+  // 🔹 Delete activity item
+  const deleteActivityItem = async (itemId, type) => {
+    try {
+      if (type === 'task') {
+        await api.delete(`/tasks/${itemId}`);
+        Swal.fire({
+          icon: 'success',
+          title: 'Task Deleted',
+          text: 'Task has been deleted successfully!',
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } else if (type === 'project') {
+        await api.delete(`/projects/${itemId}`);
+        Swal.fire({
+          icon: 'success',
+          title: 'Project Deleted',
+          text: 'Project has been deleted successfully!',
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      }
+      // Reload dashboard to refresh activity
+      loadDashboard();
+    } catch (err) {
+      console.error('Delete error:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err.response?.data?.msg || 'Failed to delete item',
+      });
+    }
+  };
+
+  // 🔹 Initial load on component mount
   useEffect(() => {
     loadDashboard();
     loadTasks();
@@ -125,12 +160,33 @@ const Dashboard = () => {
               recentActivity
                 .slice(0, 5) // show latest 5
                 .map((item, i) => (
-                  <ActivityItem
+                  <div
                     key={i}
-                    user={item.user || "System"}
-                    action={`${item.type}: ${item.action}`}
-                    time={new Date(item.time).toLocaleString()}
-                  />
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      Swal.fire({
+                        title: 'Delete?',
+                        text: `Delete this ${item.type}?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Delete',
+                        cancelButtonText: 'Cancel'
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          deleteActivityItem(item.itemId, item.type);
+                        }
+                      });
+                    }}
+                    style={{ cursor: 'context-menu' }}
+                  >
+                    <ActivityItem
+                      user={item.user || "You"}
+                      action={item.action}
+                      time={new Date(item.time).toLocaleString()}
+                    />
+                  </div>
                 ))
             )}
           </div>
@@ -205,16 +261,21 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 🔹 Popups */}
       <CreateTaskPopup
         showTaskPopup={showTaskPopup}
         setShowTaskPopup={setShowTaskPopup}
-        onTaskCreated={loadTasks}
+        onTaskCreated={() => {
+          loadTasks();
+          loadDashboard();
+        }}
       />
       <CreateProjectPopup
         show={showProjectPopup}
         onClose={() => setShowProjectPopup(false)}
-        onProjectCreated={loadDashboard}
+        onProjectCreated={() => {
+          loadDashboard();
+          loadProjects();
+        }}
       />
     </div>
   );
