@@ -2,8 +2,8 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import StatCard from "../components/StatCard";
 import ActivityItem from "../components/ActivityItem";
-import CreateTaskPopup from "../components/CreateTask.jsx";
-import CreateProjectPopup from "../components/CreateProject.jsx";
+import CreateTaskPopup from "../components/CreateTask";
+import CreateProjectPopup from "../components/CreateProject";
 
 import Swal from "sweetalert2";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
