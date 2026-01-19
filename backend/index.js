@@ -53,6 +53,13 @@ app.post("/api/test", (req, res) => {
   res.json({ msg: "Test route working" });
 });
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "ToggleNest Backend is Live 🚀"
+  });
+});
+
 // =========================
 // CONNECT TO MONGODB
 // =========================
