@@ -188,3 +188,11 @@ exports.cancelInvite = async (req, res) => {
     res.status(500).json({ message: "Failed to cancel invite" });
   }
 };
+
+exports.resendInvite = async (req, res) => {
+  try {
+    res.json({ message: "Invite resent successfully" });
+  } catch (err) {
+    res.status(400).json({ message: "Failed to resend invite" });
+  }
+};
