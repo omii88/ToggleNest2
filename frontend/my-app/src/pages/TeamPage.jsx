@@ -64,7 +64,7 @@ const TeamPage = () => {
         email: inviteEmail,
         role: inviteRole
       });
-      setPendingInvitations([res.data.invite || res.data, ...pendingInvitations]);
+      setPendingInvitations(prev => [res.data.invite || res.data, ...prev]);
       setInviteEmail("");
       setShowInviteModal(false);
       alert(`📧 Invite sent to ${inviteEmail}!`);
@@ -143,15 +143,17 @@ const TeamPage = () => {
   };
 
   // 🔹 FIXED Resend invite (✅ /api/team/invite)
-  const handleResendInvite = async (invite) => {
-    try {
-      await api.post("/api/team/invite", { email: invite.email, role: invite.role });
-      alert(`📧 Resent invitation to ${invite.email}`);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to resend invite");
-    }
-  };
+  // Replace the resend function in TeamPage.jsx
+const handleResendInvite = async (invite) => {
+  try {
+    await api.post(`/api/team/invite/${invite._id || invite.id}/resend`);
+    alert(`📧 Resent invitation to ${invite.email}`);
+  } catch (err) {
+    console.error(err);
+    alert("❌ Failed to resend invite");
+  }
+};
+
 
   // 🔹 FIXED Cancel invite (✅ /api/team/invite/)
   const handleCancelInvite = async (inviteId) => {
