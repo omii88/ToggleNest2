@@ -85,13 +85,7 @@ npm run dev
 
 Usage
 --Open the frontend (local or live link)
---Sign up or log in
---Create a project
---Add and assign tasks
---Drag tasks across the Kanban board to update progress
-
-Contributors
-1.Aditya Jadhav
-2.Devesh Chaudhari
-3.Ketan Tiwari
-4.Om Suryavanshi
+-->Sign up or log in
+-->Create a project
+-->Add and assign tasks
+-->Drag tasks across the Kanban board to update progress
