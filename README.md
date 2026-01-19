@@ -71,13 +71,13 @@ Users can create projects, assign tasks, visualize progress using Kanban boards,
 git clone https://github.com/omii88/ToggleNest2.git
 
 # Backend setup
-cd backend
-npm install
+cd backend-->
+npm install-->
 npm start
 
 # Frontend setup
-cd ../frontend
-npm install
+cd ../frontend-->
+npm install-->
 npm run dev
 
 ---Frontend runs on: http://localhost:5173 (Vite default)
