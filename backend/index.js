@@ -13,12 +13,33 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
+// REPLACE your entire CORS section with this:
 app.use(cors({
-  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ["http://localhost:3000"],
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  credentials: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://togglenest.netlify.app',
+      'https://696e3b74b92b06000833ed0d--togglenest.netlify.app',
+      'https://*.netlify.app',  // ✅ Covers ALL preview deploys
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+    
+    if (allowedOrigins.some(allowed => origin.endsWith(allowed) || origin === allowed)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
+// Handle preflight
+app.options("*", cors());
 
 // =========================
 // ROUTES
