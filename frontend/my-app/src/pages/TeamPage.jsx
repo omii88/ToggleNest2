@@ -53,22 +53,21 @@ const TeamPage = () => {
 
   const handleInviteMember = () => setShowInviteModal(true);
 
-  // 🔹 Send Invite (backend + email)
+  // 🔹 Send Invite (FIXED ✅)
   const handleSubmitInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail) return;
     if (!teamSettings.allowInvites) return alert("❌ Member invites are disabled!");
 
     try {
-      const res = await api.post("/team/invite", {
+      const res = await api.post("/api/team/invite", {
         email: inviteEmail,
         role: inviteRole
       });
-      // add to pending invitations
-      setPendingInvitations([res.data, ...pendingInvitations]);
+      setPendingInvitations([res.data.invite || res.data, ...pendingInvitations]);
       setInviteEmail("");
       setShowInviteModal(false);
-      alert(`📧 Invite sent to ${res.data.email}!`);
+      alert(`📧 Invite sent to ${inviteEmail}!`);
     } catch (err) {
       console.error(err);
       alert("❌ Failed to send invite");
@@ -97,7 +96,7 @@ const TeamPage = () => {
   // 🔹 Edit member (backend)
   const handleEditMember = async (memberId, updatedData) => {
     try {
-      const res = await api.put(`/users/${memberId}`, updatedData);
+      const res = await api.put(`/api/users/${memberId}`, updatedData);
       setMembers(prev => prev.map(m => (m.id === memberId ? res.data : m)));
       alert("✏️ Member updated successfully!");
     } catch (err) {
@@ -112,10 +111,11 @@ const TeamPage = () => {
     setShowDeleteModal(true);
   };
 
+  // 🔹 FIXED Delete member (✅ /api/team/member/)
   const confirmDeleteMember = async () => {
     if (!deleteMemberId) return;
     try {
-      await api.delete(`/team/member/${deleteMemberId}`);
+      await api.delete(`/api/team/member/${deleteMemberId}`);
       setMembers(prev => prev.filter(member => member.id !== deleteMemberId));
       setDeleteMemberId(null);
       setShowDeleteModal(false);
@@ -126,12 +126,12 @@ const TeamPage = () => {
     }
   };
 
-  // 🔹 Bulk delete members
+  // 🔹 FIXED Bulk delete (✅ /api/team/member/)
   const handleBulkDelete = async () => {
     if (selectedMembers.length === 0) return;
 
     try {
-      await Promise.all(selectedMembers.map(id => api.delete(`/team/member/${id}`)));
+      await Promise.all(selectedMembers.map(id => api.delete(`/api/team/member/${id}`)));
       setMembers(prev => prev.filter(member => !selectedMembers.includes(member.id)));
       setSelectedMembers([]);
       setBulkActionsOpen(false);
@@ -142,38 +142,49 @@ const TeamPage = () => {
     }
   };
 
-  // 🔹 Resend / Cancel invites (backend)
+  // 🔹 FIXED Resend invite (✅ /api/team/invite)
   const handleResendInvite = async (invite) => {
     try {
-      await api.post("/team/invite", { email: invite.email, role: invite.role });
+      await api.post("/api/team/invite", { email: invite.email, role: invite.role });
       alert(`📧 Resent invitation to ${invite.email}`);
     } catch (err) {
       console.error(err);
       alert("❌ Failed to resend invite");
     }
   };
-const handleCancelInvite = async (inviteId) => {
-  if (!window.confirm("Cancel this invite?")) return;
 
-  try {
-    await api.delete(`/team/invite/${inviteId}`);
-    alert("Invite cancelled");
-    fetchInvites(); // refresh list
-  } catch (err) {
-    console.error(err);
-    alert("Failed to cancel invite");
-  }
-};
+  // 🔹 FIXED Cancel invite (✅ /api/team/invite/)
+  const handleCancelInvite = async (inviteId) => {
+    if (!window.confirm("Cancel this invite?")) return;
 
+    try {
+      await api.delete(`/api/team/invite/${inviteId}`);
+      alert("Invite cancelled");
+      fetchInvites(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert("Failed to cancel invite");
+    }
+  };
 
-  // 🔹 Fetch members & invites from backend
+  // 🔹 Fetch invites function (for refresh)
+  const fetchInvites = async () => {
+    try {
+      const invitesRes = await api.get("/api/team/invites");
+      setPendingInvitations(invitesRes.data);
+    } catch (err) {
+      console.error("Failed to fetch invites", err);
+    }
+  };
+
+  // 🔹 FIXED Fetch members & invites (✅ /api/team/)
   useEffect(() => {
     const fetchMembersAndInvites = async () => {
       setLoading(true);
       try {
         const [membersRes, invitesRes] = await Promise.all([
-          api.get("/team/members"),
-          api.get("/team/invites")
+          api.get("/api/team/members"),
+          api.get("/api/team/invites")
         ]);
         setMembers(membersRes.data);
         setPendingInvitations(invitesRes.data);
@@ -369,12 +380,12 @@ const handleCancelInvite = async (inviteId) => {
               </div>
             ) : (
               pendingInvitations.map((invite) => (
-                <div className="table-row" key={invite.id}>
+                <div className="table-row" key={invite._id || invite.id}>
                   <span>{invite.email}</span>
-                  <span className={`role ${invite.role.toLowerCase()}`}>{invite.role}</span>
-                  <span>{invite.invitedBy}</span>
-                  <span>{invite.invitedOn}</span>
-                  <span>{invite.expires}</span>
+                  <span className={`role ${invite.role?.toLowerCase()}`}>{invite.role}</span>
+                  <span>{invite.invitedBy ? `User ${invite.invitedBy}` : 'You'}</span>
+                  <span>{new Date(invite.invitedOn).toLocaleDateString()}</span>
+                  <span>{invite.expires ? new Date(invite.expires).toLocaleDateString() : 'N/A'}</span>
                   <div className="actions">
                     <button 
                       className="resend-btn" 
@@ -384,7 +395,7 @@ const handleCancelInvite = async (inviteId) => {
                     </button>
                     <button 
                       className="cancel-btn"
-                      onClick={() => handleCancelInvite(invite._id)}
+                      onClick={() => handleCancelInvite(invite._id || invite.id)}
                     >
                       Cancel
                     </button>
@@ -396,7 +407,6 @@ const handleCancelInvite = async (inviteId) => {
         </div>
       )}
 
-      {/* Modals & Settings (same as your previous code) */}
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
@@ -438,7 +448,7 @@ const handleCancelInvite = async (inviteId) => {
         </div>
       )}
 
-      {/* Settings Panel (same as your previous code) */}
+      {/* Settings Panel */}
       {showSettings && (
         <div className="settings-panel open">
           <div className="settings-panel-header">
@@ -449,7 +459,25 @@ const handleCancelInvite = async (inviteId) => {
             <p>Configure your team preferences</p>
           </div>
 
-          {/* Settings Sections... same as your previous code */}
+          <div className="settings-section">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={teamSettings.allowInvites}
+                onChange={(e) => updateSetting('allowInvites', e.target.checked)}
+              />
+              Allow member invites
+            </label>
+            <label>
+              <input 
+                type="checkbox" 
+                checked={teamSettings.emailNotifications}
+                onChange={(e) => updateSetting('emailNotifications', e.target.checked)}
+              />
+              Email notifications
+            </label>
+          </div>
+
           <div className="settings-footer">
             <button 
               className="btn-secondary"
