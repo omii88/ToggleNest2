@@ -10,7 +10,6 @@ router.get("/invites", auth, team.getInvitations);
 router.post("/invite", auth, team.sendInvite);
 router.delete("/invite/:id", auth, team.cancelInvite);
 router.delete("/member/:id", auth, team.deleteMember);
-router.post("/invite/:id/resend", auth, team.resendInvite);
 // Invite accept (ONE CLICK – no frontend)
 router.get("/invite/accept/:token", team.acceptInviteDirect);
 
