@@ -43,6 +43,13 @@ app.use("/api/team", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
 app.use("/api/dashboard", dashboardRoutes); // ✅ ADDED
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "ToggleNest Backend is Live 🚀"
+  });
+});
+
 // Test route
 app.get("/api/test", (req, res) => {
   res.json({ msg: "API working 🚀" });
