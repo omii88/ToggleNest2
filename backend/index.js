@@ -13,13 +13,12 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "*", // optional, allows any frontend
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ["http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  credentials: true,
+}));
+
 
 // =========================
 // ROUTES
