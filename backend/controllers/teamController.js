@@ -45,26 +45,19 @@ exports.sendInvite = async (req, res) => {
   const { email, role } = req.body;
 
   try {
-    if (!email || !role) {
-      return res.status(400).json({ message: "Email and role are required" });
-    }
-
-    // ✅ fetch inviter details
-    const inviter = await User.findById(req.user.id);
-    if (!inviter) {
-      return res.status(404).json({ message: "Inviter not found" });
-    }
-
+    // Generate a unique token
     const token = crypto.randomBytes(20).toString("hex");
 
+    // Create the invitation in DB
     const invite = await Invitation.create({
       email,
       role,
       invitedBy: req.user.id,
-      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
       token
     });
 
+    // Nodemailer transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -73,36 +66,36 @@ exports.sendInvite = async (req, res) => {
       }
     });
 
+    // Invite link points to HTML page route
     const acceptLink = `${process.env.BACKEND_URL}/api/team/invite/accept/${token}`;
 
+    // Mail content
     const mailOptions = {
       from: `"ToggleNest Team" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "You are invited to join a team!",
       html: `
         <p>Hello,</p>
-        <p>${inviter.email} has invited you to join their team on ToggleNest.</p>
+        <p>${req.user.email} has invited you to join their team on ToggleNest.</p>
         <p>Role: <b>${role}</b></p>
-        <p>
-          <a href="${acceptLink}"
-             style="padding:10px 20px;background:#007bff;color:#fff;text-decoration:none;border-radius:5px;">
-             Accept Invite
-          </a>
-        </p>
+        <p>Click the button below to accept the invite:</p>
+        <a href="${acceptLink}" 
+           style="display:inline-block;padding:10px 20px;background:#007bff;color:#fff;text-decoration:none;border-radius:5px;">
+           Accept Invite
+        </a>
         <p>This invite will expire in 14 days.</p>
       `
     };
 
+    // Send email
     await transporter.sendMail(mailOptions);
 
     res.status(201).json({ message: "Invite sent", invite });
-
   } catch (err) {
-    console.error("Send invite error:", err);
+    console.error(err);
     res.status(400).json({ message: "Failed to send invite" });
   }
 };
-
 
 // =========================
 // DELETE MEMBER
@@ -186,13 +179,5 @@ exports.cancelInvite = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to cancel invite" });
-  }
-};
-
-exports.resendInvite = async (req, res) => {
-  try {
-    res.json({ message: "Invite resent successfully" });
-  } catch (err) {
-    res.status(400).json({ message: "Failed to resend invite" });
   }
 };
