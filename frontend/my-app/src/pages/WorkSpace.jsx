@@ -1,6 +1,6 @@
 // ✅ FINAL WorkSpace.jsx - FULLY WORKING BACKEND + MOCK DATA HYBRID
 import React, { useState, useEffect } from "react";
-import "../theme/WorkSpace.css"; 
+import "../theme/Workspace.css"; 
 import api from "../api/axios";
 
 const WorkSpace = () => {
