@@ -15,11 +15,11 @@ app.use(express.json());
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*", // optional, allows any frontend
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
   })
 );
+
 
 // =========================
 // ROUTES
