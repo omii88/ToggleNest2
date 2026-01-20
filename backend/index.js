@@ -15,10 +15,23 @@ app.use(express.json());
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (origin === "https://togglenest.netlify.app") {
+        return callback(null, true);
+      }
+
+      if (origin.endsWith(".netlify.app")) {
+        return callback(null, true);
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   })
 );
+
 
 
 // =========================
