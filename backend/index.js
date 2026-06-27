@@ -25,17 +25,22 @@ app.use(
       if (
         allowedOrigins.includes(origin) ||
         origin.startsWith("http://localhost:") ||
-        origin.endsWith(".vercel.app")
+        origin.endsWith(".vercel.app") ||
+        origin.endsWith(".netlify.app")
       ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+      return callback(null, false); // ❗ DO NOT throw Error
     },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 200,
   })
 );
+
+
+
 
 // =========================
 // ROUTES
@@ -58,6 +63,13 @@ app.use("/api/users", userRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/sprints", sprintRoutes);
 app.use("/api/dashboard", dashboardRoutes); // ✅ ADDED
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "ToggleNest Backend is Live 🚀"
+  });
+});
 
 // Test route
 app.get("/api/test", (req, res) => {
