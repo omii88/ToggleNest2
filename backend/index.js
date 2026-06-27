@@ -15,8 +15,24 @@ app.use(express.json());
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*", // optional, allows any frontend
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://togglenestf2.vercel.app",
+      ];
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.startsWith("http://localhost:") ||
+        origin.endsWith(".vercel.app")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   })
 );
@@ -54,14 +70,21 @@ app.post("/api/test", (req, res) => {
 });
 
 // =========================
-// CONNECT TO MONGODB
+// CONNECT TO MONGODB & START SERVER
 // =========================
 const PORT = process.env.PORT || 5000;
 
+// Connect to MongoDB (Asynchronously in background)
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+  });
+
+// Start listening immediately to prevent Render / cloud port binding timeout
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
