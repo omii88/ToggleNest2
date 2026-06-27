@@ -86,7 +86,6 @@ const WorkSpace = () => {
           id: "1",
           name: "Acme Corp HQ",
           projects: 12,
-          members: 3,
           active: true,
           members: [{ email: "john@acme.com" }, { email: "jane@acme.com" }]
         },
@@ -95,7 +94,6 @@ const WorkSpace = () => {
           id: "2",
           name: "Personal Projects",
           projects: 5,
-          members: 1,
           active: false,
           members: [{ email: "you@toggle.com" }]
         },
@@ -104,7 +102,6 @@ const WorkSpace = () => {
           id: "3",
           name: "Marketing Team", 
           projects: 8,
-          members: 4,
           active: false,
           members: [{ email: "marketing@company.com" }]
         }
@@ -215,7 +212,6 @@ const WorkSpace = () => {
           id: Date.now().toString(),
           name: newWorkspaceName.trim(),
           projects: 0,
-          members: 1,
           active: true,
           members: [{ email: "you@toggle.com" }]
         };
@@ -249,7 +245,6 @@ const WorkSpace = () => {
           (w._id || w.id) === selectedWorkspaceId 
             ? { 
                 ...w, 
-                members: (w.members || []).length + 1,
                 members: [...(w.members || []), { email: newMemberEmail.trim() }]
               }
             : w
